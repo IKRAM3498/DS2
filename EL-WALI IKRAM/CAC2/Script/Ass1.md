@@ -30,4 +30,5 @@ Les noms et numéros de sécurité sociale des patients ont été supprimés et 
 Un fichier a été pré-traité (celui de Cleveland), tandis que les trois autres restent non traités.
 Des informations supplémentaires sur les coûts de test (fournies par Peter Turney) se trouvent dans le dossier "Costs".
 <img width="1489" height="989" alt="image" src="https://github.com/user-attachments/assets/f38ea09b-bc4a-4192-bdf3-301814acaba0" />
-<img width="1489" height="989" alt="image" src="https://github.com/user-attachments/assets/a4b13635-dd58-4db4-a5f2-583647d53d40" />
+<img width="1790" height="1190" alt="image" src="https://github.com/user-attachments/assets/1300f4e7-1cc2-4e13-9dd4-00ce363cb78b" />
+
