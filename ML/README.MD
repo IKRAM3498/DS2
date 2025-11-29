@@ -6,13 +6,6 @@
 
 ---
 
-# **Table des Matières**
-1. [Introduction et Contexte](#1-introduction-et-contexte)  
-2. [Description du Dataset](#2-description-du-dataset)  
-3. [Analyse Exploratoire des Données](#3-analyse-exploratoire-des-données)  
-4. [Méthodologie de Modélisation](#4-méthodologie-de-modélisation)  
-5. [Résultats et Interprétation](#5-résultats-et-interprétation)  
-6. [Conclusion](#6-conclusion)
 
 ---
 
