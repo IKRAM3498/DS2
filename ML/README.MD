@@ -4,10 +4,6 @@
 ## **Classe** : CAC2 
 
 
----
-
-
----
 
 # **1. Introduction et Contexte**
 Le présent compte rendu porte sur l’analyse de deux jeux de données réels concernant les vins portugais *Vinho Verde* (rouge et blanc). L’objectif principal est de prédire la **qualité du vin** à partir de ses caractéristiques physico-chimiques.  
