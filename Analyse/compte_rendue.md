@@ -1,5 +1,4 @@
 # **IKRAM EL-WALI**
-<img src="https://www.encgs.ac.ma/" style="height:300px; margin-right:300px; float:left; border-radius:10px;" alt="Image ENC GS"/>
 
 **Classe** : CAC2
 
