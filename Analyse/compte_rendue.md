@@ -1,4 +1,6 @@
 # **IKRAM EL-WALI**
+<img width="629" height="635" alt="image" src="https://github.com/user-attachments/assets/f91744f2-5583-4b28-85c8-0c9c7a6ef1f5" />
+
 #**Classe** : CAC2
 
 <br clear="left"/>
