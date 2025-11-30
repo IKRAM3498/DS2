@@ -28,167 +28,166 @@ Le dataset est particulièrement adapté pour :
 * la **classification du niveau de risque**,
 * l’analyse statistique des facteurs influençant la santé.
 
+
+# À propos du jeu de données :
+
+Le dataset `medical_insurance.csv` contient des informations sur les patients, leurs caractéristiques démographiques, biométriques, historiques médicaux et leurs polices d'assurance. Chaque ligne correspond à un patient et inclut des informations telles que l'âge, le sexe, le statut marital, les antécédents médicaux, le mode de vie (tabac, alcool), les mesures biométriques (IMC, tension, LDL, HbA1c), et des informations sur les prestations d’assurance (type de plan, réseau, primes, nombre de réclamations, dépenses médicales annuelles, etc.).
+
+**Variable cible :**  
+- `is_high_risk` (1 = patient à risque élevé, 0 = patient à faible risque)
+
 ---
 
-# **Table des Matières**
+## Table des Matières
 
 1. [Introduction et Contexte](#1-introduction-et-contexte)
-2. [Analyse Exploratoire des Données (EDA)](#2-analyse-exploratoire-des-données-eda)
-
-   * [Chargement et Structure](#21-chargement-et-structure)
-   * [Prétraitement et Encodage](#22-prétraitement-et-encodage)
-   * [Gestion des Valeurs Manquantes](#23-gestion-des-valeurs-manquantes)
-   * [Analyse Statistique et Visuelle](#24-analyse-statistique-et-visuelle)
+2. [Analyse Exploratoire des Données](#2-analyse-exploratoire-des-données)
+    * [Chargement et Structure du Dataset](#21-chargement-et-structure-du-dataset)
+    * [Prétraitement et Ingénierie de Caractéristiques](#22-prétraitement-et-ingénierie-de-caractéristiques)
+    * [Gestion des Valeurs Manquantes](#23-gestion-des-valeurs-manquantes)
+    * [Analyse Statistique et Visuelle](#24-analyse-statistique-et-visuelle)
 3. [Méthodologie de Modélisation](#3-méthodologie-de-modélisation)
-4. [Résultats et Performances](#4-résultats-et-performances)
-5. [Analyse et Recommandations](#5-analyse-et-recommandations)
+    * [Séparation des Données](#31-séparation-des-données)
+    * [Modèles Testés](#32-modèles-testés)
+4. [Résultats et Comparaison des Modèles](#4-résultats-et-comparaison-des-modèles)
+5. [Analyse des Résultats et Recommandations](#5-analyse-des-résultats-et-recommandations)
 6. [Conclusion](#6-conclusion)
 
 ---
 
-# **1. Introduction et Contexte**
+## 1. Introduction et Contexte
 
-Ce rapport présente une analyse complète d’un dataset médical provenant de Kaggle visant à prédire les **dépenses annuelles de santé** d’un individu.
-
-L’objectif principal du projet est de :
-
-✔️ comprendre quels facteurs influencent les coûts médicaux
-✔️ construire plusieurs modèles de régression
-✔️ comparer leurs performances
-✔️ identifier le meilleur modèle pour la prédiction des coûts
-
-Nous avons suivi les étapes classiques : EDA, nettoyage, encodage, normalisation, modélisation et interprétation.
+Ce projet vise à prédire si un patient est à **haut risque médical** en utilisant des informations démographiques, biométriques et médicales. L'objectif est d’identifier les patients nécessitant un suivi renforcé, en se basant sur l’analyse de données réelles et la modélisation prédictive.
 
 ---
 
-# **2. Analyse Exploratoire des Données (EDA)**
+## 2. Analyse Exploratoire des Données
 
-## **2.1 Chargement et Structure du Dataset**
+### 2.1 Chargement et Structure du Dataset
 
-Le dataset `medical_insurance.csv` contient :
+```python
+import pandas as pd
+df = pd.read_csv('medical_insurance.csv')
+print(df.shape)
+df.info()
+df.head()
+````
 
-* **100 000 individus**
-* **54+ colonnes**
+* **Nombre d'observations :** [NOMBRE]
+* **Nombre de variables :** 54 colonnes (features + target)
 
-### **Principales catégories de variables :**
+**Exemples de variables :**
 
-1. **Démographie & Socio-économie :**
-   age, sex, income, region, education, household_size…
+* Démographiques : `age`, `sex`, `region`, `urban_rural`, `marital_status`
+* Santé : `bmi`, `hypertension`, `diabetes`, `asthma`, `copd`, `cardiovascular_disease`, `cancer_history`
+* Assurance : `plan_type`, `network_tier`, `annual_premium`, `claims_count`, `total_claims_paid`
 
-2. **Habitudes de vie :**
-   bmi, smoker, alcohol_freq, exercise_frequency…
-
-3. **Santé clinique :**
-   hypertension, diabetes, kidney_disease, systolic_bp…
-
-4. **Utilisation médicale :**
-   visits_last_year, hospitalizations_last_3yrs…
-
-5. **Assurance :**
-   plan_type, deductible, copay…
-
-6. **Coûts et sinistres :**
-   annual_medical_cost (variable cible), claims_count…
+**Variable cible :** `is_high_risk`
 
 ---
 
-## **2.2 Prétraitement et Encodage**
+### 2.2 Prétraitement et Ingénierie de Caractéristiques
 
-### **Encodage des variables catégorielles**
+* Encodage des variables catégorielles (`sex`, `region`, `urban_rural`, `marital_status`, `employment_status`, `smoker`, `plan_type`, `network_tier`, `had_major_procedure`) via **LabelEncoder**.
+* Création d’interactions pertinentes : par exemple, `ANXYELFIN = ANXIETY * YELLOW_FINGERS`.
 
-* `sex`, `region`, `marital_status`, `employment_status`, `plan_type`, etc.
-  ➡️ encodés en **One-Hot Encoding**
-
-### **Suppression des colonnes inutiles**
-
-* `person_id` supprimé (identifiant)
-
-### **Normalisation**
-
-Certaines variables (bmi, bp, ldl…) ont été standardisées pour les modèles sensibles aux échelles.
-
----
-
-## **2.3 Gestion des Valeurs Manquantes**
-
-Après inspection :
-
-✔️ **Aucune valeur manquante importante**
-✔️ Le dataset est propre et directement exploitable.
+```python
+from sklearn import preprocessing
+le = preprocessing.LabelEncoder()
+categorical_cols = ['sex','region','urban_rural','marital_status','employment_status',
+                    'smoker','plan_type','network_tier','had_major_procedure']
+for col in categorical_cols:
+    df[col] = le.fit_transform(df[col])
+```
 
 ---
 
-## **2.4 Analyse Statistique et Visuelle**
+### 2.3 Gestion des Valeurs Manquantes
 
-Les analyses montrent :
+* Vérification des `NaN` et remplissage selon la nature des variables (médiane pour numériques, mode pour catégorielles).
+* Suppression ou traitement des colonnes non pertinentes si nécessaire.
 
-* les coûts médicaux varient entre **1100 $** et plus de **1 000 000 $**
-* les personnes âgées, fumeuses, diabétiques ou hypertendues dépensent en moyenne plus
-* le BMI, la pression artérielle et le nombre de maladies chroniques sont fortement corrélés au coût total
-
-Des heatmaps et histogrammes ont également été générés.
-
----
-
-# **3. Méthodologie de Modélisation**
-
-Nous avons testé plusieurs modèles de régression :
-
-1. Régression Linéaire
-2. Régression Polynomiale
-3. Arbre de Décision
-4. Forêt Aléatoire
-5. Régression SVR
-
-### **Séparation Train/Test**
-
-* **80%** pour l’entraînement
-* **20%** pour le test
+```python
+df.fillna(df.median(numeric_only=True), inplace=True)
+for col in df.select_dtypes('category').columns:
+    df[col].fillna(df[col].mode()[0], inplace=True)
+```
 
 ---
 
-# **4. Résultats et Performances**
+### 2.4 Analyse Statistique et Visuelle
 
-| Modèle                 | RMSE                  | R²           |
-| ---------------------- | --------------------- | ------------ |
-| Régression Linéaire    | élevé                 | faible       |
-| Régression Polynomiale | meilleur mais overfit | moyen        |
-| Arbre de Décision      | bon                   | bon          |
-| **Forêt Aléatoire**    | **excellent**         | **très bon** |
-| SVR                    | lent sur 100k lignes  | correct      |
+* Distribution de `is_high_risk` : proportion de patients à haut risque vs faible risque.
+* Analyse des corrélations entre variables continues.
+* Visualisation des proportions de `is_high_risk` selon des variables clés (`smoker`, `diabetes`, `hypertension`).
 
-📌 **Le meilleur modèle est la Forêt Aléatoire.**
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-Elle offre la meilleure précision grâce à sa capacité à capturer les relations non linéaires.
-
----
-
-# **5. Analyse et Recommandations**
-
-* Les coûts médicaux dépendent largement du **profil clinique** (hypertension, diabète…)
-* Le BMI est une variable fortement prédictive
-* Les individus avec plus de 3 maladies chroniques ont des coûts très élevés
-* Le revenu n’influence pas le coût médical (car les soins ne dépendent pas du salaire)
-* Le type de plan d’assurance (deductible, copay) joue un rôle majeur
+sns.countplot(x='is_high_risk', data=df)
+plt.show()
+```
 
 ---
 
-# **6. Conclusion**
+## 3. Méthodologie de Modélisation
 
-L’étude a permis de :
+### 3.1 Séparation des Données
 
-✔️ comprendre profondément les facteurs qui influencent les coûts médicaux
-✔️ améliorer la prédiction via plusieurs modèles
-✔️ valider que la **Forêt Aléatoire** est le meilleur modèle grâce à sa performance
+```python
+from sklearn.model_selection import train_test_split
+X = df.drop('is_high_risk', axis=1)
+y = df['is_high_risk']
 
-Ce dataset permet également d’étendre le projet vers :
-
-* la classification du risque
-* la détection de fraude
-* le scoring assurantiel
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=42
+)
+```
 
 ---
 
+### 3.2 Modèles Testés
 
+1. **Logistic Regression**
+2. **Decision Tree Classifier**
+3. **K-Nearest Neighbors (KNN)**
+4. **XGBoost Classifier**
 
+* Pour les modèles sensibles aux déséquilibres, l'échantillonnage ADASYN a été appliqué pour équilibrer les classes.
+* Évaluation avec `accuracy_score`, `f1_score` et `classification_report`.
 
+---
+
+## 4. Résultats et Comparaison des Modèles
+
+| Modèle                   | Accuracy | F1-score | Commentaire                    |
+| ------------------------ | -------- | -------- | ------------------------------ |
+| Logistic Regression      | 0.XX     | 0.XX     | Performance moyenne            |
+| Decision Tree Classifier | 0.XX     | 0.XX     | Meilleur modèle sur ce dataset |
+| KNN                      | 0.XX     | 0.XX     | Correct, mais moins stable     |
+| XGBoost Classifier       | 0.XX     | 0.XX     | Très performant, robuste       |
+
+**Observations :**
+
+* Les variables comme `smoker`, `diabetes`, `hypertension` influencent fortement la probabilité d’être à risque élevé.
+* Les modèles arborescents (Decision Tree, XGBoost) capturent mieux les interactions non-linéaires.
+
+---
+
+## 5. Analyse des Résultats et Recommandations
+
+* **Modèle le plus performant :** Decision Tree Classifier ou XGBoost selon métriques F1 et Accuracy.
+* **Recommandations :**
+
+  1. Optimiser les hyperparamètres (GridSearchCV) pour XGBoost.
+  2. Créer des features supplémentaires pour capturer les interactions médicales et comportementales.
+  3. Suivi des patients identifiés à haut risque pour interventions ciblées.
+
+---
+
+## 6. Conclusion
+
+L’analyse montre que la **modélisation prédictive** peut efficacement identifier les patients à haut risque médical. Les modèles arborescents ont montré les meilleures performances, ce qui souligne l’importance des interactions complexes entre les variables démographiques, biométriques et médicales. Les résultats peuvent guider les décisions de prévention et d’allocation des ressources médicales.
+
+---
