@@ -30,8 +30,6 @@ Le dataset est particulièrement adapté pour :
 * l’analyse statistique des facteurs influençant la santé.
 
 
-Parfait ! Voici un compte rendu académique complet **adapté à ta base de données médicale** et formaté en Markdown exactement comme l’exemple que tu as fourni :
-
 ---
 
 ## Table des Matières
