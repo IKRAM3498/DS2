@@ -1,139 +1,104 @@
-# Import des librairies
+# -*- coding: utf-8 -*-
+"""
+Script complet pour prédiction du risque élevé avec plusieurs modèles
+"""
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Pour ignorer les warnings
-import warnings
-warnings.filterwarnings("ignore")
-
-# Chargement du dataset
-df = pd.read_csv('medical_insurance.csv')
-
-# Affichage des 5 premières lignes
-print(df.head())
-
-# Liste des colonnes catégorielles (object)
-categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
-
-# Suppression des colonnes inutiles pour le modèle
-if 'person_id' in df.columns:
-    df = df.drop(columns=['person_id'])
-
-# Encodage One-Hot des variables catégorielles
-df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
-
-# Vérification des valeurs manquantes
-print("Valeurs manquantes par colonne :\n", df.isnull().sum())
-
-# Suppression ou remplacement des valeurs manquantes
-df = df.dropna()
-
-# Séparation des données en features X et cible y
-y = df['annual_medical_cost']          # Variable cible
-X = df.drop(columns=['annual_medical_cost'])
-
-# Séparation train/test (80%/20%)
+from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
+from imblearn.over_sampling import ADASYN
+from sklearn.metrics import classification_report, accuracy_score, f1_score
 
+# -----------------------------
+# 1. Charger le dataset
+# -----------------------------
+df = pd.read_csv('medical_insurance.csv')  # Modifier avec le chemin correct
+
+# -----------------------------
+# 2. Préparer les données
+# -----------------------------
+# Séparer colonnes numériques et catégorielles
+num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+# Encoder les colonnes catégorielles
+for col in cat_cols:
+    le = LabelEncoder()
+    df[col] = le.fit_transform(df[col].astype(str))
+
+# Remplir les NaN
+for col in num_cols:
+    df[col] = df[col].fillna(df[col].median())
+
+df['is_high_risk'] = df['is_high_risk'].fillna(df['is_high_risk'].mode()[0])
+
+# Séparer X et y
+X = df.drop('is_high_risk', axis=1)
+y = df['is_high_risk']
+
+# -----------------------------
+# 3. Rééchantillonnage ADASYN
+# -----------------------------
+adasyn = ADASYN(random_state=42)
+X_resampled, y_resampled = adasyn.fit_resample(X, y)
+
+# -----------------------------
+# 4. Split train/test
+# -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X_resampled, y_resampled, test_size=0.25, random_state=0
 )
 
-# Import des modèles et métriques
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
-from sklearn.metrics import mean_squared_error, r2_score
+# -----------------------------
+# 5. Entraîner les modèles
+# -----------------------------
+# Logistic Regression
+lr_model = LogisticRegression(random_state=0, max_iter=1000)
+lr_model.fit(X_train, y_train)
+y_lr_pred = lr_model.predict(X_test)
 
-# Régression Linéaire
-model_lr = LinearRegression()
-model_lr.fit(X_train, y_train)
-y_pred_lr = model_lr.predict(X_test)
-mse_lr = mean_squared_error(y_test, y_pred_lr)
-rmse_lr = np.sqrt(mse_lr)
-r2_lr = r2_score(y_test, y_pred_lr)
+# Decision Tree
+dt_model = DecisionTreeClassifier(criterion='entropy', random_state=0)
+dt_model.fit(X_train, y_train)
+y_dt_pred = dt_model.predict(X_test)
 
-# Régression Polynomiale (degré 2)
-poly_features = PolynomialFeatures(degree=2, include_bias=False)
-X_train_poly = poly_features.fit_transform(X_train)
-X_test_poly = poly_features.transform(X_test)
-model_poly = LinearRegression()
-model_poly.fit(X_train_poly, y_train)
-y_pred_poly = model_poly.predict(X_test_poly)
-mse_poly = mean_squared_error(y_test, y_pred_poly)
-rmse_poly = np.sqrt(mse_poly)
-r2_poly = r2_score(y_test, y_pred_poly)
+# K-Nearest Neighbors
+knn_model = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2)
+knn_model.fit(X_train, y_train)
+y_knn_pred = knn_model.predict(X_test)
 
-# Arbre de Décision
-model_dt = DecisionTreeRegressor(random_state=42)
-model_dt.fit(X_train, y_train)
-y_pred_dt = model_dt.predict(X_test)
-mse_dt = mean_squared_error(y_test, y_pred_dt)
-rmse_dt = np.sqrt(mse_dt)
-r2_dt = r2_score(y_test, y_pred_dt)
+# XGBoost
+xgb_model = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+xgb_model.fit(X_train, y_train)
+y_xgb_pred = xgb_model.predict(X_test)
 
-# Forêt Aléatoire
-model_rf = RandomForestRegressor(random_state=42)
-model_rf.fit(X_train, y_train)
-y_pred_rf = model_rf.predict(X_test)
-mse_rf = mean_squared_error(y_test, y_pred_rf)
-rmse_rf = np.sqrt(mse_rf)
-r2_rf = r2_score(y_test, y_pred_rf)
+# -----------------------------
+# 6. Évaluer les modèles
+# -----------------------------
+models = {
+    "Logistic Regression": y_lr_pred,
+    "Decision Tree": y_dt_pred,
+    "KNN": y_knn_pred,
+    "XGBoost": y_xgb_pred
+}
 
-# SVR avec normalisation
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-model_svr = SVR(kernel='rbf')
-model_svr.fit(X_train_scaled, y_train)
-y_pred_svr = model_svr.predict(X_test_scaled)
-mse_svr = mean_squared_error(y_test, y_pred_svr)
-rmse_svr = np.sqrt(mse_svr)
-r2_svr = r2_score(y_test, y_pred_svr)
+for name, pred in models.items():
+    print(f"\n==== {name} ====")
+    print("Accuracy:", accuracy_score(y_test, pred))
+    print("F1-score:", f1_score(y_test, pred))
+    print(classification_report(y_test, pred))
 
-# Affichage des résultats
-print(f"Régression Linéaire - R²: {r2_lr:.4f}, MSE: {mse_lr:.2f}, RMSE: {rmse_lr:.2f}")
-print(f"Régression Polynomiale - R²: {r2_poly:.4f}, MSE: {mse_poly:.2f}, RMSE: {rmse_poly:.2f}")
-print(f"Arbre de Décision - R²: {r2_dt:.4f}, MSE: {mse_dt:.2f}, RMSE: {rmse_dt:.2f}")
-print(f"Forêt Aléatoire - R²: {r2_rf:.4f}, MSE: {mse_rf:.2f}, RMSE: {rmse_rf:.2f}")
-print(f"SVR - R²: {r2_svr:.4f}, MSE: {mse_svr:.2f}, RMSE: {rmse_svr:.2f}")
+# -----------------------------
+# 7. Optionnel : sauvegarder les prédictions
+# -----------------------------
+pd.DataFrame(y_lr_pred, columns=['LR_Predicted']).to_csv('LR_predictions.csv', index=False)
+pd.DataFrame(y_dt_pred, columns=['DT_Predicted']).to_csv('DT_predictions.csv', index=False)
+pd.DataFrame(y_knn_pred, columns=['KNN_Predicted']).to_csv('KNN_predictions.csv', index=False)
+pd.DataFrame(y_xgb_pred, columns=['XGB_Predicted']).to_csv('XGB_predictions.csv', index=False)
 
-# Visualisations
-
-# Scatter plot : Réel vs Prédit avec Arbre de Décision
-plt.figure(figsize=(8,6))
-plt.scatter(y_test, y_pred_dt, alpha=0.3)
-plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--')
-plt.xlabel('Valeurs Réelles')
-plt.ylabel('Valeurs Prédites')
-plt.title('Arbre de Décision : Réel vs Prédit')
-plt.show()
-
-# Barplot R2 et RMSE
-metrics_df = pd.DataFrame({
-    'Modèle': ['Régression Linéaire', 'Régression Polynomiale', 'Arbre de Décision', 'Forêt Aléatoire', 'SVR'],
-    'R2': [r2_lr, r2_poly, r2_dt, r2_rf, r2_svr],
-    'RMSE': [rmse_lr, rmse_poly, rmse_dt, rmse_rf, rmse_svr]
-})
-
-fig, ax1 = plt.subplots(figsize=(12,6))
-
-color = 'tab:blue'
-ax1.set_xlabel('Modèle')
-ax1.set_ylabel('R2', color=color)
-ax1.bar(metrics_df['Modèle'], metrics_df['R2'], color=color, alpha=0.6)
-ax1.tick_params(axis='y', labelcolor=color)
-
-ax2 = ax1.twinx()
-color = 'tab:green'
-ax2.set_ylabel('RMSE', color=color)
-ax2.plot(metrics_df['Modèle'], metrics_df['RMSE'], color=color, marker='o')
-ax2.tick_params(axis='y', labelcolor=color)
-ax2.invert_yaxis()  # Pour que RMSE faible soit en haut
-
-plt.title('Comparaison des performances : R2 (barres) et RMSE (courbe)')
-plt.show()
+print("\nPrédictions sauvegardées dans des fichiers CSV.")
